@@ -45,19 +45,20 @@ public class BalloonHash {
   public byte[] hash(byte[] password, byte[] salt) {
     final int delta = 3;
     int cnt = 0;
-    final byte[][] blocks = new byte[sCost][digestLength];
+    final int blockCount = sCost / digestLength;
+    final byte[][] blocks = new byte[blockCount][digestLength];
 
     // Step 1. Expand input into buffer.
     blocks[0] = hash(cnt++, password, seed(salt));
-    for (int i = 1; i < sCost; i++) {
+    for (int i = 1; i < blockCount; i++) {
       blocks[i] = hash(cnt++, blocks[i - 1], NULL);
     }
 
     // Step 2. Mix buffer contents.
     for (int t = 0; t < tCost; t++) {
-      for (int m = 0; m < sCost; m++) {
+      for (int m = 0; m < blockCount; m++) {
         // Step 2a. Hash last and current blocks.
-        final byte[] prev = blocks[mod(m - 1, sCost)];
+        final byte[] prev = blocks[mod(m - 1, blockCount)];
         blocks[m] = hash(cnt++, prev, blocks[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
@@ -83,14 +84,14 @@ public class BalloonHash {
           idx |= (h[1] & 0xff) << 8;
           idx |= (h[2] & 0xff) << 16;
           idx |= (h[3] & 0xff) << 24;
-          idx = mod(idx, sCost);
+          idx = mod(idx, blockCount);
           blocks[m] = hash(cnt++, blocks[m], blocks[idx]);
         }
       }
     }
 
     // Step 3. Extract output from buffer.
-    return blocks[sCost - 1];
+    return blocks[blockCount - 1];
   }
 
   protected byte[] seed(byte[] salt) {

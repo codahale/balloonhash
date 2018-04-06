@@ -28,12 +28,12 @@ class BalloonHashTest {
   void hashingPasswords() throws NoSuchAlgorithmException {
     final byte[] password = "this is a good password".getBytes(StandardCharsets.UTF_8);
     final byte[] salt = "this is a good salt".getBytes(StandardCharsets.UTF_8);
-    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 6, 1 << 9);
+    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 11, 1 << 9);
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
         .containsExactly(
-            -57, -79, -41, -4, 0, 83, 85, 53, 119, -93, 62, 104, -46, 127, -87, 69, 15, -112, -10,
-            -47, -101, -70, 124, 116, 96, 91, 87, -124, 21, 0, -89, -75);
+            -97, -85, -88, 40, -84, -39, -104, -75, -33, -13, 24, 113, -33, 18, 100, 75, 118, 79,
+            28, 61, -112, -14, -17, -41, 81, 15, 89, 6, 70, 45, -3, -61);
   }
 
   @Test
