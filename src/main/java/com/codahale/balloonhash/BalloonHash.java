@@ -134,6 +134,12 @@ public class BalloonHash {
     return blocks[blockCount - 1];
   }
 
+  /**
+   * Encode the hash parameters into a salt.
+   *
+   * @param salt a random salt
+   * @return the seed for the hash algorithm
+   */
   protected byte[] seed(byte[] salt) {
     final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 12);
     int idx = salt.length;
