@@ -19,29 +19,69 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+/** An implementation of the {@link BalloonHash} algorithm. */
 public class BalloonHash {
 
   private static final byte[] NULL = new byte[0];
 
-  private final String hashAlg;
+  private final String algorithm;
   private final int sCost, tCost;
   private final int digestLength;
 
-  public BalloonHash(String hashAlg, int sCost, int tCost) throws NoSuchAlgorithmException {
-    this.hashAlg = hashAlg;
+  /**
+   * Create a new {@link BalloonHash} instance with the given parameters.
+   *
+   * @param algorithm the name of the algorithm requested. See the MessageDigest section in the <a
+   *     href=
+   *     "https://docs.oracle.com/javase/9/docs/specs/security/standard-names.html#messagedigest-algorithms">
+   *     Java Security Standard Algorithm Names Specification</a> for information about standard
+   *     algorithm names.
+   * @param sCost the space cost (in bytes)
+   * @param tCost the time cost (in iterations)
+   * @throws NoSuchAlgorithmException if no {@code Provider} supports a {@code MessageDigestSpi}
+   *     implementation for the specified algorithm
+   */
+  public BalloonHash(String algorithm, int sCost, int tCost) throws NoSuchAlgorithmException {
+    this.algorithm = algorithm;
     this.sCost = sCost;
     this.tCost = tCost;
-    this.digestLength = MessageDigest.getInstance(hashAlg).getDigestLength();
+    this.digestLength = MessageDigest.getInstance(algorithm).getDigestLength();
   }
 
+  /**
+   * Returns the length of the resulting digest (in bytes).
+   *
+   * @return the length of the resulting digest (in bytes)
+   */
   public int getDigestLength() {
     return digestLength;
   }
 
-  public int getMemoryUsage() {
-    return sCost * digestLength;
+  /**
+   * Returns the space cost (in bytes).
+   *
+   * @return the space cost (in bytes)
+   */
+  public int getSCost() {
+    return sCost;
   }
 
+  /**
+   * Returns the time cost (in iterations).
+   *
+   * @return the time cost (in iterations)
+   */
+  public int getTCost() {
+    return tCost;
+  }
+
+  /**
+   * Hashes the given password and salt.
+   *
+   * @param password a password of arbitrary length
+   * @param salt a salt of arbitrary length
+   * @return the hash balloon digest
+   */
   public byte[] hash(byte[] password, byte[] salt) {
     final int delta = 3;
     int cnt = 0;
@@ -111,7 +151,7 @@ public class BalloonHash {
 
   private byte[] hash(int cnt, byte[] block, byte[] other) {
     try {
-      final MessageDigest h = MessageDigest.getInstance(hashAlg);
+      final MessageDigest h = MessageDigest.getInstance(algorithm);
       h.update((byte) (cnt));
       h.update((byte) (cnt >>> 8));
       h.update((byte) (cnt >>> 16));

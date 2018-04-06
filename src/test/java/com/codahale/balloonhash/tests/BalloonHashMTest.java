@@ -37,14 +37,11 @@ class BalloonHashMTest {
   }
 
   @Test
-  void digestLength() throws NoSuchAlgorithmException {
+  void parameters() throws NoSuchAlgorithmException {
     final BalloonHashM bh = new BalloonHashM("SHA-256", 1 << 6, 1 << 9, 10);
     assertThat(bh.getDigestLength()).isEqualTo(32);
-  }
-
-  @Test
-  void memoryUsage() throws NoSuchAlgorithmException {
-    final BalloonHashM bh = new BalloonHashM("SHA-256", 1 << 6, 1 << 9, 10);
-    assertThat(bh.getMemoryUsage()).isEqualTo(20480);
+    assertThat(bh.getSCost()).isEqualTo(640);
+    assertThat(bh.getTCost()).isEqualTo(512);
+    assertThat(bh.getPCost()).isEqualTo(10);
   }
 }

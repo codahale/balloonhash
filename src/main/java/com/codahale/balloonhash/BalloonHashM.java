@@ -19,13 +19,28 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
+/** An implementation of the parallel {@link BalloonHashM} algorithm. */
 public class BalloonHashM extends BalloonHash {
 
   private final int pCost;
 
-  public BalloonHashM(String hashAlg, int sCost, int tCost, int pCost)
+  /**
+   * Create a new parallel {@link BalloonHashM} instance with the given parameters.
+   *
+   * @param algorithm the name of the algorithm requested. See the MessageDigest section in the <a
+   *     href=
+   *     "https://docs.oracle.com/javase/9/docs/specs/security/standard-names.html#messagedigest-algorithms">
+   *     Java Security Standard Algorithm Names Specification</a> for information about standard
+   *     algorithm names.
+   * @param sCost the space cost (in bytes)
+   * @param tCost the time cost (in iterations)
+   * @param pCost the number of threads to use
+   * @throws NoSuchAlgorithmException if no {@code Provider} supports a {@code MessageDigestSpi}
+   *     implementation for the specified algorithm
+   */
+  public BalloonHashM(String algorithm, int sCost, int tCost, int pCost)
       throws NoSuchAlgorithmException {
-    super(hashAlg, sCost, tCost);
+    super(algorithm, sCost, tCost);
     this.pCost = pCost;
   }
 
@@ -63,8 +78,17 @@ public class BalloonHashM extends BalloonHash {
   }
 
   @Override
-  public int getMemoryUsage() {
-    return super.getMemoryUsage() * pCost;
+  public int getSCost() {
+    return super.getSCost() * pCost;
+  }
+
+  /**
+   * Returns the parallelism cost (in threads).
+   *
+   * @return the parallelism cost (in threads)
+   */
+  public int getPCost() {
+    return pCost;
   }
 
   @Override
