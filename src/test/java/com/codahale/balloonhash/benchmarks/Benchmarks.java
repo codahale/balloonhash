@@ -18,29 +18,45 @@ package com.codahale.balloonhash.benchmarks;
 import com.codahale.balloonhash.BalloonHash;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.Main;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.runner.RunnerException;
 
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Benchmark)
 public class Benchmarks {
   public static void main(String[] args) throws IOException, RunnerException {
     Main.main(args);
   }
 
-  private static BalloonHash newBH() {
-    try {
-      return new BalloonHash("SHA-512", 1 << 14, 5, 4);
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private final byte[] password = new byte[30];
   private final byte[] salt = new byte[32];
-  private final BalloonHash bh = newBH();
+
+  @SuppressWarnings("NullAway.Init")
+  private BalloonHash bh;
+
+  @Param({"16384", "32768", "65536"})
+  public int sCost = 1;
+
+  @Param({"1", "10", "100"})
+  public int tCost = 1;
+
+  @Param({"1", "2", "4", "8"})
+  public int pCost = 1;
+
+  @Setup
+  public void setup() throws NoSuchAlgorithmException {
+    this.bh = new BalloonHash("SHA-512", sCost, tCost, pCost);
+  }
 
   @Benchmark
   public byte[] hash() {
