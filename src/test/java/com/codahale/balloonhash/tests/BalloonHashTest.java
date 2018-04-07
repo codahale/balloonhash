@@ -16,6 +16,7 @@
 package com.codahale.balloonhash.tests;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.codahale.balloonhash.BalloonHash;
 import java.nio.charset.StandardCharsets;
@@ -54,5 +55,18 @@ class BalloonHashTest {
     assertThat(bh.getSCost()).isEqualTo(1024);
     assertThat(bh.getTCost()).isEqualTo(10);
     assertThat(bh.getPCost()).isEqualTo(1);
+  }
+
+  @Test
+  void shortSalt() throws NoSuchAlgorithmException {
+    final BalloonHash bh = new BalloonHash("SHA-256", 1, 1, 1);
+    assertThatThrownBy(() -> bh.hash(new byte[12], new byte[3]))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void badAlgorithm() {
+    assertThatThrownBy(() -> new BalloonHash("YES", 1, 1, 1))
+        .isInstanceOf(NoSuchAlgorithmException.class);
   }
 }
