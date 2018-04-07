@@ -96,6 +96,10 @@ public class BalloonHash {
    * @return the hash balloon digest
    */
   public byte[] hash(byte[] password, byte[] salt) {
+    if (pCost == 1) {
+      return singleHash(password, seed(salt, 1));
+    }
+
     return IntStream.rangeClosed(1, pCost)
         .parallel()
         .mapToObj(i -> singleHash(password, seed(salt, i)))
