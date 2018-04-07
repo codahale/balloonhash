@@ -92,10 +92,14 @@ public class BalloonHash {
    * Hashes the given password and salt.
    *
    * @param password a password of arbitrary length
-   * @param salt a salt of arbitrary length
+   * @param salt a salt of at least 4 bytes
    * @return the hash balloon digest
    */
   public byte[] hash(byte[] password, byte[] salt) {
+    if (salt.length < 4) {
+      throw new IllegalArgumentException("salt must be at least 4 bytes long");
+    }
+
     if (pCost == 1) {
       return singleHash(password, seed(salt, 1));
     }
