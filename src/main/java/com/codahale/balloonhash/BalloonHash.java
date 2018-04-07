@@ -24,6 +24,7 @@ import java.util.stream.IntStream;
 public class BalloonHash {
 
   private static final byte[] NULL = new byte[0];
+  private static final int DELTA = 3;
 
   private final String algorithm;
   private final int sCost, tCost, pCost;
@@ -120,7 +121,6 @@ public class BalloonHash {
   }
 
   private byte[] singleHash(byte[] password, byte[] seed) {
-    final int delta = 3;
     int cnt = 0;
     final int blockCount = sCost / digestLength;
     final byte[][] blocks = new byte[blockCount][digestLength];
@@ -139,7 +139,7 @@ public class BalloonHash {
         blocks[m] = hash(cnt++, prev, blocks[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
-        for (int i = 0; i < delta; i++) {
+        for (int i = 0; i < DELTA; i++) {
           final byte[] in = new byte[12];
           in[0] = (byte) (t);
           in[1] = (byte) (t >>> 8);
@@ -172,7 +172,7 @@ public class BalloonHash {
   }
 
   private byte[] seed(byte[] salt, int i) {
-    final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 16);
+    final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 12);
 
     // increment first four bytes with worker number
     int n = (seed[0] & 0xff);
@@ -187,18 +187,19 @@ public class BalloonHash {
 
     // add parameters
     int idx = salt.length;
-    seed[++idx] = (byte) (sCost);
-    seed[++idx] = (byte) (sCost >>> 8);
-    seed[++idx] = (byte) (sCost >>> 16);
-    seed[++idx] = (byte) (sCost >>> 24);
-    seed[++idx] = (byte) (tCost);
-    seed[++idx] = (byte) (tCost >>> 8);
-    seed[++idx] = (byte) (tCost >>> 16);
-    seed[++idx] = (byte) (tCost >>> 24);
-    seed[++idx] = (byte) (pCost);
-    seed[++idx] = (byte) (pCost >>> 8);
-    seed[++idx] = (byte) (pCost >>> 16);
-    seed[++idx] = (byte) (pCost >>> 24);
+    seed[idx++] = (byte) (sCost);
+    seed[idx++] = (byte) (sCost >>> 8);
+    seed[idx++] = (byte) (sCost >>> 16);
+    seed[idx++] = (byte) (sCost >>> 24);
+    seed[idx++] = (byte) (tCost);
+    seed[idx++] = (byte) (tCost >>> 8);
+    seed[idx++] = (byte) (tCost >>> 16);
+    seed[idx++] = (byte) (tCost >>> 24);
+    seed[idx++] = (byte) (pCost);
+    seed[idx++] = (byte) (pCost >>> 8);
+    seed[idx++] = (byte) (pCost >>> 16);
+    seed[idx] = (byte) (pCost >>> 24);
+
     return seed;
   }
 
