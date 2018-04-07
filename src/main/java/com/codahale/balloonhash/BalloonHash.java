@@ -46,11 +46,16 @@ public class BalloonHash {
    */
   public BalloonHash(String algorithm, int sCost, int tCost, int pCost)
       throws NoSuchAlgorithmException {
+    this.digestLength = MessageDigest.getInstance(algorithm).getDigestLength();
     this.algorithm = algorithm;
+
+    if (sCost < digestLength) {
+      throw new IllegalArgumentException("sCost must be greater than the digest length");
+    }
     this.sCost = sCost;
+
     this.tCost = tCost;
     this.pCost = pCost;
-    this.digestLength = MessageDigest.getInstance(algorithm).getDigestLength();
   }
 
   /**
@@ -122,7 +127,7 @@ public class BalloonHash {
 
   private byte[] singleHash(byte[] password, byte[] seed) {
     int cnt = 0; // the counter used in the security proof
-    final byte[][] buf = new byte[sCost / digestLength][digestLength];
+    final byte[][] buf = new byte[blockCount(sCost, digestLength)][];
 
     // Step 1. Expand input into buffer.
     buf[0] = hash(cnt++, password, seed);
@@ -218,5 +223,11 @@ public class BalloonHash {
 
   private static int mod(int dividend, int divisor) {
     return (int) ((dividend & 0xffffffffL) % (divisor & 0xffffffffL));
+  }
+
+  // returns the number of m-byte blocks required to use n bytes of memory
+  private static int blockCount(int n, int m) {
+    final int rem = n % m;
+    return ((rem == 0) ? n : n + m - rem) / m;
   }
 }

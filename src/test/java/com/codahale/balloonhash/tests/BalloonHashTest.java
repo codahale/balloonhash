@@ -39,6 +39,16 @@ class BalloonHashTest {
   }
 
   @Test
+  void oddSpaceCost() throws NoSuchAlgorithmException {
+    final BalloonHash bh = new BalloonHash("SHA-256", 65, 1 << 9, 1);
+    final byte[] actual = bh.hash(password, salt);
+    assertThat(actual)
+        .containsExactly(
+            27, 68, 89, -102, -82, -19, 29, -72, -123, 1, 92, -21, 7, 92, 29, 69, -27, -78, -71,
+            -56, 26, 116, 5, -120, 2, -81, 49, -38, 58, 7, 117, 6);
+  }
+
+  @Test
   void parallelism() throws NoSuchAlgorithmException {
     final BalloonHash bh = new BalloonHash("SHA-256", 1 << 11, 1 << 9, 10);
     final byte[] actual = bh.hash(password, salt);
@@ -59,14 +69,14 @@ class BalloonHashTest {
 
   @Test
   void shortSalt() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 1, 1, 1);
+    final BalloonHash bh = new BalloonHash("SHA-256", 1024, 1, 1);
     assertThatThrownBy(() -> bh.hash(new byte[12], new byte[3]))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void badAlgorithm() {
-    assertThatThrownBy(() -> new BalloonHash("YES", 1, 1, 1))
+    assertThatThrownBy(() -> new BalloonHash("YES", 1024, 1, 1))
         .isInstanceOf(NoSuchAlgorithmException.class);
   }
 }
