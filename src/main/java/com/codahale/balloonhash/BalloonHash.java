@@ -23,7 +23,7 @@ import java.util.stream.IntStream;
 /** An implementation of the {@link BalloonHash} algorithm. */
 public class BalloonHash {
 
-  private static final byte[] NULL = new byte[0];
+  private static final byte[] NULL = new byte[0]; // number of dependencies per block / graph depth
   private static final int DELTA = 3;
 
   private final String algorithm;
@@ -121,54 +121,52 @@ public class BalloonHash {
   }
 
   private byte[] singleHash(byte[] password, byte[] seed) {
-    int cnt = 0;
-    final int blockCount = sCost / digestLength;
-    final byte[][] blocks = new byte[blockCount][digestLength];
+    int cnt = 0; // the counter used in the security proof
+    final byte[][] buf = new byte[sCost / digestLength][digestLength];
 
     // Step 1. Expand input into buffer.
-    blocks[0] = hash(cnt++, password, seed);
-    for (int i = 1; i < blockCount; i++) {
-      blocks[i] = hash(cnt++, blocks[i - 1], NULL);
+    buf[0] = hash(cnt++, password, seed);
+    for (int i = 1; i < buf.length; i++) {
+      buf[i] = hash(cnt++, buf[i - 1], NULL);
     }
 
     // Step 2. Mix buffer contents.
     for (int t = 0; t < tCost; t++) {
-      for (int m = 0; m < blockCount; m++) {
+      for (int m = 0; m < buf.length; m++) {
         // Step 2a. Hash last and current blocks.
-        final byte[] prev = blocks[mod(m - 1, blockCount)];
-        blocks[m] = hash(cnt++, prev, blocks[m]);
+        final byte[] prev = buf[mod(m - 1, buf.length)];
+        buf[m] = hash(cnt++, prev, buf[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
         for (int i = 0; i < DELTA; i++) {
-          final byte[] in = new byte[12];
-          in[0] = (byte) (t);
-          in[1] = (byte) (t >>> 8);
-          in[2] = (byte) (t >>> 16);
-          in[3] = (byte) (t >>> 24);
+          final byte[] idxBlock = new byte[12];
+          idxBlock[0] = (byte) (t);
+          idxBlock[1] = (byte) (t >>> 8);
+          idxBlock[2] = (byte) (t >>> 16);
+          idxBlock[3] = (byte) (t >>> 24);
+          idxBlock[4] = (byte) (m);
+          idxBlock[5] = (byte) (m >>> 8);
+          idxBlock[6] = (byte) (m >>> 16);
+          idxBlock[7] = (byte) (m >>> 24);
+          idxBlock[8] = (byte) (i);
+          idxBlock[9] = (byte) (i >>> 8);
+          idxBlock[10] = (byte) (i >>> 16);
+          idxBlock[11] = (byte) (i >>> 24);
 
-          in[4] = (byte) (m);
-          in[5] = (byte) (m >>> 8);
-          in[6] = (byte) (m >>> 16);
-          in[7] = (byte) (m >>> 24);
+          final byte[] h = hash(cnt++, seed, idxBlock);
+          int other = (h[0] & 0xff);
+          other |= (h[1] & 0xff) << 8;
+          other |= (h[2] & 0xff) << 16;
+          other |= (h[3] & 0xff) << 24;
+          other = mod(other, buf.length);
 
-          in[8] = (byte) (i);
-          in[9] = (byte) (i >>> 8);
-          in[10] = (byte) (i >>> 16);
-          in[11] = (byte) (i >>> 24);
-
-          final byte[] h = hash(cnt++, seed, in);
-          int idx = (h[0] & 0xff);
-          idx |= (h[1] & 0xff) << 8;
-          idx |= (h[2] & 0xff) << 16;
-          idx |= (h[3] & 0xff) << 24;
-          idx = mod(idx, blockCount);
-          blocks[m] = hash(cnt++, blocks[m], blocks[idx]);
+          buf[m] = hash(cnt++, buf[m], buf[other]);
         }
       }
     }
 
     // Step 3. Extract output from buffer.
-    return blocks[blockCount - 1];
+    return buf[buf.length - 1];
   }
 
   private byte[] seed(byte[] salt, int i) {

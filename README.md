@@ -2,6 +2,8 @@
 
 A Java implementation of the [Balloon Hashing](https://crypto.stanford.edu/balloon/) algorithm.
 
+Full paper is [here](https://eprint.iacr.org/2016/027.pdf).
+
 ## It Runs On My Laptop
 
 ```
