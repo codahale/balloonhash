@@ -16,7 +16,6 @@
 package com.codahale.balloonhash.benchmarks;
 
 import com.codahale.balloonhash.BalloonHash;
-import com.codahale.balloonhash.BalloonHashM;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import org.openjdk.jmh.Main;
@@ -31,17 +30,9 @@ public class Benchmarks {
     Main.main(args);
   }
 
-  private static BalloonHashM newBHM() {
-    try {
-      return new BalloonHashM("SHA-512", 1 << 14, 5, 4);
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private static BalloonHash newBH() {
     try {
-      return new BalloonHash("SHA-512", 1 << 14, 5);
+      return new BalloonHash("SHA-512", 1 << 14, 5, 4);
     } catch (NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
     }
@@ -50,15 +41,9 @@ public class Benchmarks {
   private final byte[] password = new byte[30];
   private final byte[] salt = new byte[32];
   private final BalloonHash bh = newBH();
-  private final BalloonHashM bhm = newBHM();
 
   @Benchmark
   public byte[] hash() {
     return bh.hash(password, salt);
-  }
-
-  @Benchmark
-  public byte[] hashM() {
-    return bhm.hash(password, salt);
   }
 }

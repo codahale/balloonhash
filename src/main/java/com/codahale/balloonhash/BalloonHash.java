@@ -18,6 +18,7 @@ package com.codahale.balloonhash;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 /** An implementation of the {@link BalloonHash} algorithm. */
 public class BalloonHash {
@@ -25,7 +26,7 @@ public class BalloonHash {
   private static final byte[] NULL = new byte[0];
 
   private final String algorithm;
-  private final int sCost, tCost;
+  private final int sCost, tCost, pCost;
   private final int digestLength;
 
   /**
@@ -38,13 +39,16 @@ public class BalloonHash {
    *     algorithm names.
    * @param sCost the space cost (in bytes)
    * @param tCost the time cost (in iterations)
+   * @param pCost the parallelism cost (in threads)
    * @throws NoSuchAlgorithmException if no {@code Provider} supports a {@code MessageDigestSpi}
    *     implementation for the specified algorithm
    */
-  public BalloonHash(String algorithm, int sCost, int tCost) throws NoSuchAlgorithmException {
+  public BalloonHash(String algorithm, int sCost, int tCost, int pCost)
+      throws NoSuchAlgorithmException {
     this.algorithm = algorithm;
     this.sCost = sCost;
     this.tCost = tCost;
+    this.pCost = pCost;
     this.digestLength = MessageDigest.getInstance(algorithm).getDigestLength();
   }
 
@@ -76,6 +80,15 @@ public class BalloonHash {
   }
 
   /**
+   * Returns the parallelism cost (in threads).
+   *
+   * @return the parallelism cost (in threads)
+   */
+  public int getPCost() {
+    return pCost;
+  }
+
+  /**
    * Hashes the given password and salt.
    *
    * @param password a password of arbitrary length
@@ -83,13 +96,29 @@ public class BalloonHash {
    * @return the hash balloon digest
    */
   public byte[] hash(byte[] password, byte[] salt) {
+    return IntStream.rangeClosed(1, pCost)
+        .parallel()
+        .mapToObj(i -> singleHash(password, seed(salt, i)))
+        .reduce(
+            new byte[getDigestLength()],
+            (a, b) -> {
+              // combine all hashes by XORing them together
+              final byte[] c = new byte[a.length];
+              for (int i = 0; i < a.length; i++) {
+                c[i] = (byte) (a[i] ^ b[i]);
+              }
+              return c;
+            });
+  }
+
+  private byte[] singleHash(byte[] password, byte[] seed) {
     final int delta = 3;
     int cnt = 0;
     final int blockCount = sCost / digestLength;
     final byte[][] blocks = new byte[blockCount][digestLength];
 
     // Step 1. Expand input into buffer.
-    blocks[0] = hash(cnt++, password, seed(salt));
+    blocks[0] = hash(cnt++, password, seed);
     for (int i = 1; i < blockCount; i++) {
       blocks[i] = hash(cnt++, blocks[i - 1], NULL);
     }
@@ -119,7 +148,7 @@ public class BalloonHash {
           in[10] = (byte) (i >>> 16);
           in[11] = (byte) (i >>> 24);
 
-          final byte[] h = hash(cnt++, salt, in);
+          final byte[] h = hash(cnt++, seed, in);
           int idx = (h[0] & 0xff);
           idx |= (h[1] & 0xff) << 8;
           idx |= (h[2] & 0xff) << 16;
@@ -134,14 +163,21 @@ public class BalloonHash {
     return blocks[blockCount - 1];
   }
 
-  /**
-   * Encode the hash parameters into a salt.
-   *
-   * @param salt a random salt
-   * @return the seed for the hash algorithm
-   */
-  protected byte[] seed(byte[] salt) {
-    final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 12);
+  private byte[] seed(byte[] salt, int i) {
+    final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 16);
+
+    // increment first four bytes with worker number
+    int n = (seed[0] & 0xff);
+    n |= (seed[1] & 0xff) << 8;
+    n |= (seed[2] & 0xff) << 16;
+    n |= (seed[3] & 0xff) << 24;
+    n += i;
+    seed[0] = (byte) (n);
+    seed[1] = (byte) (n >>> 8);
+    seed[2] = (byte) (n >>> 16);
+    seed[3] = (byte) (n >>> 24);
+
+    // add parameters
     int idx = salt.length;
     seed[++idx] = (byte) (sCost);
     seed[++idx] = (byte) (sCost >>> 8);
@@ -151,7 +187,10 @@ public class BalloonHash {
     seed[++idx] = (byte) (tCost >>> 8);
     seed[++idx] = (byte) (tCost >>> 16);
     seed[++idx] = (byte) (tCost >>> 24);
-    seed[++idx] = 1; // one thread
+    seed[++idx] = (byte) (pCost);
+    seed[++idx] = (byte) (pCost >>> 8);
+    seed[++idx] = (byte) (pCost >>> 16);
+    seed[++idx] = (byte) (pCost >>> 24);
     return seed;
   }
 
