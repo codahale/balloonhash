@@ -18,7 +18,7 @@ package com.codahale.balloonhash;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.stream.IntStream;
+import java.util.HashMap;
 
 /** An implementation of the {@link BalloonHash} algorithm. */
 public class BalloonHash {
@@ -27,8 +27,8 @@ public class BalloonHash {
   private static final int DELTA = 3;
 
   private final String algorithm;
+  private final MessageDigest h;
   private final int sCost, tCost, pCost;
-  private final int digestLength;
 
   /**
    * Create a new {@link BalloonHash} instance with the given parameters.
@@ -46,10 +46,11 @@ public class BalloonHash {
    */
   public BalloonHash(String algorithm, int sCost, int tCost, int pCost)
       throws NoSuchAlgorithmException {
-    this.digestLength = MessageDigest.getInstance(algorithm).getDigestLength();
-    this.algorithm = algorithm;
 
-    if (sCost < digestLength) {
+    this.algorithm = algorithm;
+    this.h = MessageDigest.getInstance(algorithm);
+
+    if (sCost < h.getDigestLength()) {
       throw new IllegalArgumentException("sCost must be greater than the digest length");
     }
     this.sCost = sCost;
@@ -71,7 +72,7 @@ public class BalloonHash {
    * @return the length of the resulting digest (in bytes)
    */
   public int getDigestLength() {
-    return digestLength;
+    return h.getDigestLength();
   }
 
   /**
@@ -114,12 +115,18 @@ public class BalloonHash {
     }
 
     if (pCost == 1) {
-      return singleHash(password, seed(salt, 1));
+      return singleHash(h, password, seed(salt, 1));
     }
 
-    return IntStream.rangeClosed(1, pCost)
-        .parallel()
-        .mapToObj(i -> singleHash(password, seed(salt, i)))
+    final HashMap<MessageDigest, byte[]> values = new HashMap<>();
+    for (int i = 1; i <= pCost; i++) {
+      values.put(hashClone(), seed(salt, i));
+    }
+
+    return values
+        .entrySet()
+        .parallelStream()
+        .map(p -> singleHash(p.getKey(), password, p.getValue()))
         .reduce(
             new byte[getDigestLength()],
             (a, b) -> {
@@ -132,14 +139,14 @@ public class BalloonHash {
             });
   }
 
-  private byte[] singleHash(byte[] password, byte[] seed) {
+  private byte[] singleHash(MessageDigest h, byte[] password, byte[] seed) {
     int cnt = 0; // the counter used in the security proof
-    final byte[][] buf = new byte[blockCount(sCost, digestLength)][];
+    final byte[][] buf = new byte[blockCount(sCost, h.getDigestLength())][];
 
     // Step 1. Expand input into buffer.
-    buf[0] = hash(cnt++, password, seed);
+    buf[0] = hash(h, cnt++, password, seed);
     for (int i = 1; i < buf.length; i++) {
-      buf[i] = hash(cnt++, buf[i - 1], NULL);
+      buf[i] = hash(h, cnt++, buf[i - 1], NULL);
     }
 
     // Step 2. Mix buffer contents.
@@ -147,7 +154,7 @@ public class BalloonHash {
       for (int m = 0; m < buf.length; m++) {
         // Step 2a. Hash last and current blocks.
         final byte[] prev = buf[mod(m - 1, buf.length)];
-        buf[m] = hash(cnt++, prev, buf[m]);
+        buf[m] = hash(h, cnt++, prev, buf[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
         for (int i = 0; i < DELTA; i++) {
@@ -165,14 +172,14 @@ public class BalloonHash {
           idxBlock[10] = (byte) (i >>> 16);
           idxBlock[11] = (byte) (i >>> 24);
 
-          final byte[] h = hash(cnt++, seed, idxBlock);
-          int other = (h[0] & 0xff);
-          other |= (h[1] & 0xff) << 8;
-          other |= (h[2] & 0xff) << 16;
-          other |= (h[3] & 0xff) << 24;
+          final byte[] v = hash(h, cnt++, seed, idxBlock);
+          int other = (v[0] & 0xff);
+          other |= (v[1] & 0xff) << 8;
+          other |= (v[2] & 0xff) << 16;
+          other |= (v[3] & 0xff) << 24;
           other = mod(other, buf.length);
 
-          buf[m] = hash(cnt++, buf[m], buf[other]);
+          buf[m] = hash(h, cnt++, buf[m], buf[other]);
         }
       }
     }
@@ -213,9 +220,8 @@ public class BalloonHash {
     return seed;
   }
 
-  private byte[] hash(int cnt, byte[] block, byte[] other) {
+  private byte[] hash(MessageDigest h, int cnt, byte[] block, byte[] other) {
     try {
-      final MessageDigest h = MessageDigest.getInstance(algorithm);
       h.update((byte) (cnt));
       h.update((byte) (cnt >>> 8));
       h.update((byte) (cnt >>> 16));
@@ -223,8 +229,20 @@ public class BalloonHash {
       h.update(block);
       h.update(other);
       return h.digest();
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
+    } finally {
+      h.reset();
+    }
+  }
+
+  private MessageDigest hashClone() {
+    try {
+      return (MessageDigest) h.clone();
+    } catch (CloneNotSupportedException e) {
+      try {
+        return MessageDigest.getInstance(algorithm);
+      } catch (NoSuchAlgorithmException e1) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
