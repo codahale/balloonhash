@@ -79,4 +79,22 @@ class BalloonHashTest {
     assertThatThrownBy(() -> new BalloonHash("YES", 1024, 1, 1))
         .isInstanceOf(NoSuchAlgorithmException.class);
   }
+
+  @Test
+  void badSpaceCost() {
+    assertThatThrownBy(() -> new BalloonHash("SHA-512", 1, 1, 1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void badTimeCost() {
+    assertThatThrownBy(() -> new BalloonHash("SHA-512", 1024, 0, 1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void badParallelismCost() {
+    assertThatThrownBy(() -> new BalloonHash("SHA-512", 1024, 1, 0))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }

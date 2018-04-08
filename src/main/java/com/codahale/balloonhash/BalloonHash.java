@@ -54,7 +54,14 @@ public class BalloonHash {
     }
     this.sCost = sCost;
 
+    if (tCost < 1) {
+      throw new IllegalArgumentException("tCost must be greater than or equal to 1");
+    }
     this.tCost = tCost;
+
+    if (pCost < 1) {
+      throw new IllegalArgumentException("pCost must be greater than or equal to 1");
+    }
     this.pCost = pCost;
   }
 
