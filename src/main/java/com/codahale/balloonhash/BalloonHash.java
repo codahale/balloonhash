@@ -18,7 +18,7 @@ package com.codahale.balloonhash;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.stream.IntStream;
 
 /** An implementation of the {@link BalloonHash} algorithm. */
 public class BalloonHash {
@@ -118,15 +118,9 @@ public class BalloonHash {
       return singleHash(h, password, seed(salt, 1));
     }
 
-    final HashMap<MessageDigest, byte[]> values = new HashMap<>();
-    for (int i = 1; i <= pCost; i++) {
-      values.put(hashClone(), seed(salt, i));
-    }
-
-    return values
-        .entrySet()
-        .parallelStream()
-        .map(p -> singleHash(p.getKey(), password, p.getValue()))
+    return IntStream.rangeClosed(1, pCost)
+        .parallel()
+        .mapToObj(i -> singleHash(newHash(), password, seed(salt, i)))
         .reduce(
             new byte[getDigestLength()],
             (a, b) -> {
@@ -234,15 +228,11 @@ public class BalloonHash {
     }
   }
 
-  private MessageDigest hashClone() {
+  private MessageDigest newHash() {
     try {
-      return (MessageDigest) h.clone();
-    } catch (CloneNotSupportedException e) {
-      try {
-        return MessageDigest.getInstance(algorithm);
-      } catch (NoSuchAlgorithmException e1) {
-        throw new RuntimeException(e);
-      }
+      return MessageDigest.getInstance(algorithm);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
     }
   }
 
