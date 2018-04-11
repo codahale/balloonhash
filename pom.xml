@@ -86,6 +86,7 @@
       <version>${jmh.version}</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <distributionManagement>
@@ -238,8 +239,14 @@
               <artifactId>nullaway</artifactId>
               <version>0.4.1</version>
             </path>
+            <path>
+              <groupId>org.openjdk.jmh</groupId>
+              <artifactId>jmh-generator-annprocess</artifactId>
+              <version>${jmh.version}</version>
+            </path>
           </annotationProcessorPaths>
           <compilerArgs>
+            <arg>-XepExcludedPaths:.*/generated-.*/.*</arg>
             <arg>-Xep:NullAway:ERROR</arg>
             <arg>-XepOpt:NullAway:AnnotatedPackages=com.codahale</arg>
           </compilerArgs>
