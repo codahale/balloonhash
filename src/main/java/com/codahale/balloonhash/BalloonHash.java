@@ -155,31 +155,31 @@ public class BalloonHash {
 
     // Step 1. Expand input into buffer.
     hash(h, cnt++, cntBlock, password, seed, buf[0]);
-    for (int i = 1; i < buf.length; i++) {
-      hash(h, cnt++, cntBlock, buf[i - 1], NULL, buf[i]);
+    for (int m = 1; m < buf.length; m++) {
+      hash(h, cnt++, cntBlock, buf[m - 1], NULL, buf[m]);
     }
 
     // Step 2. Mix buffer contents.
-    for (int i = 0; i < r; i++) {
-      for (int j = 0; j < buf.length; j++) {
+    for (int t = 0; t < r; t++) {
+      for (int m = 0; m < buf.length; m++) {
         // Step 2a. Hash last and current blocks.
-        final byte[] prev = buf[mod(j - 1, buf.length)];
-        hash(h, cnt++, cntBlock, prev, buf[j], buf[j]);
+        final byte[] prev = buf[mod(m - 1, buf.length)];
+        hash(h, cnt++, cntBlock, prev, buf[m], buf[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
-        for (int k = 0; k < DELTA; k++) {
-          idxBlock[0] = (byte) (i);
-          idxBlock[1] = (byte) (i >>> 8);
-          idxBlock[2] = (byte) (i >>> 16);
-          idxBlock[3] = (byte) (i >>> 24);
-          idxBlock[4] = (byte) (j);
-          idxBlock[5] = (byte) (j >>> 8);
-          idxBlock[6] = (byte) (j >>> 16);
-          idxBlock[7] = (byte) (j >>> 24);
-          idxBlock[8] = (byte) (k);
-          idxBlock[9] = (byte) (k >>> 8);
-          idxBlock[10] = (byte) (k >>> 16);
-          idxBlock[11] = (byte) (k >>> 24);
+        for (int i = 0; i < DELTA; i++) {
+          idxBlock[0] = (byte) (t);
+          idxBlock[1] = (byte) (t >>> 8);
+          idxBlock[2] = (byte) (t >>> 16);
+          idxBlock[3] = (byte) (t >>> 24);
+          idxBlock[4] = (byte) (m);
+          idxBlock[5] = (byte) (m >>> 8);
+          idxBlock[6] = (byte) (m >>> 16);
+          idxBlock[7] = (byte) (m >>> 24);
+          idxBlock[8] = (byte) (i);
+          idxBlock[9] = (byte) (i >>> 8);
+          idxBlock[10] = (byte) (i >>> 16);
+          idxBlock[11] = (byte) (i >>> 24);
 
           hash(h, cnt++, cntBlock, seed, idxBlock, v);
           int other = (v[0] & 0xff);
@@ -188,7 +188,7 @@ public class BalloonHash {
           other |= (v[3] & 0xff) << 24;
           other = mod(other, buf.length);
 
-          hash(h, cnt++, cntBlock, buf[j], buf[other], buf[j]);
+          hash(h, cnt++, cntBlock, buf[m], buf[other], buf[m]);
         }
       }
     }
