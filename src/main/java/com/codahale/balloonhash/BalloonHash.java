@@ -15,6 +15,7 @@
  */
 package com.codahale.balloonhash;
 
+import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -136,12 +137,14 @@ public class BalloonHash {
   private byte[] singleHash(MessageDigest h, byte[] password, byte[] seed) {
     int cnt = 0; // the counter used in the security proof
     final byte[] cntBlock = new byte[4];
-    final byte[][] buf = new byte[blockCount(sCost, h.getDigestLength())][];
+    final byte[] v = new byte[h.getDigestLength()];
+    final byte[] idxBlock = new byte[12];
+    final byte[][] buf = new byte[blockCount(sCost, h.getDigestLength())][h.getDigestLength()];
 
     // Step 1. Expand input into buffer.
-    buf[0] = hash(h, cnt++, cntBlock, password, seed);
+    hash(h, cnt++, cntBlock, password, seed, buf[0]);
     for (int i = 1; i < buf.length; i++) {
-      buf[i] = hash(h, cnt++, cntBlock, buf[i - 1], NULL);
+      hash(h, cnt++, cntBlock, buf[i - 1], NULL, buf[i]);
     }
 
     // Step 2. Mix buffer contents.
@@ -149,11 +152,10 @@ public class BalloonHash {
       for (int m = 0; m < buf.length; m++) {
         // Step 2a. Hash last and current blocks.
         final byte[] prev = buf[mod(m - 1, buf.length)];
-        buf[m] = hash(h, cnt++, cntBlock, prev, buf[m]);
+        hash(h, cnt++, cntBlock, prev, buf[m], buf[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
         for (int i = 0; i < DELTA; i++) {
-          final byte[] idxBlock = new byte[12];
           idxBlock[0] = (byte) (t);
           idxBlock[1] = (byte) (t >>> 8);
           idxBlock[2] = (byte) (t >>> 16);
@@ -167,14 +169,14 @@ public class BalloonHash {
           idxBlock[10] = (byte) (i >>> 16);
           idxBlock[11] = (byte) (i >>> 24);
 
-          final byte[] v = hash(h, cnt++, cntBlock, seed, idxBlock);
+          hash(h, cnt++, cntBlock, seed, idxBlock, v);
           int other = (v[0] & 0xff);
           other |= (v[1] & 0xff) << 8;
           other |= (v[2] & 0xff) << 16;
           other |= (v[3] & 0xff) << 24;
           other = mod(other, buf.length);
 
-          buf[m] = hash(h, cnt++, cntBlock, buf[m], buf[other]);
+          hash(h, cnt++, cntBlock, buf[m], buf[other], buf[m]);
         }
       }
     }
@@ -215,7 +217,7 @@ public class BalloonHash {
     return seed;
   }
 
-  private byte[] hash(MessageDigest h, int cnt, byte[] cntBlock, byte[] a, byte[] b) {
+  private void hash(MessageDigest h, int cnt, byte[] cntBlock, byte[] a, byte[] b, byte[] out) {
     cntBlock[0] = (byte) (cnt);
     cntBlock[1] = (byte) (cnt >>> 8);
     cntBlock[2] = (byte) (cnt >>> 16);
@@ -225,7 +227,9 @@ public class BalloonHash {
       h.update(cntBlock);
       h.update(a);
       h.update(b);
-      return h.digest();
+      h.digest(out, 0, out.length);
+    } catch (DigestException e) {
+      throw new RuntimeException(e);
     } finally {
       h.reset();
     }
