@@ -44,18 +44,18 @@ public class Benchmarks {
   @SuppressWarnings("NullAway.Init")
   private BalloonHash bh;
 
-  @Param({"16384", "32768", "65536"})
-  public int sCost = 1;
+  @Param({"32", "64", "128"})
+  public int n = 32;
 
   @Param({"1", "10", "100"})
-  public int tCost = 1;
+  public int r = 1;
 
-  @Param({"1", "2", "4", "8"})
-  public int pCost = 1;
+  @Param({"1", "2", "4"})
+  public int p = 1;
 
   @Setup
   public void setup() throws NoSuchAlgorithmException {
-    this.bh = new BalloonHash("SHA-512", sCost, tCost, pCost);
+    this.bh = new BalloonHash("SHA-512", n, r, p);
   }
 
   @Benchmark

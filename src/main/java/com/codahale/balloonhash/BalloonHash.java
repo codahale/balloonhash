@@ -21,15 +21,20 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-/** An implementation of the {@link BalloonHash} algorithm. */
+/**
+ * An implementation of the {@link BalloonHash} algorithm.
+ *
+ * @see <a href="https://eprint.iacr.org/2016/027.pdf">Balloon Hashing: A Memory-Hard Function
+ *     Providing Provable Protection Against Sequential Attacks</a>
+ */
 public class BalloonHash {
 
-  private static final byte[] NULL = new byte[0]; // number of dependencies per block / graph depth
-  private static final int DELTA = 3;
+  private static final byte[] NULL = new byte[0];
+  private static final int DELTA = 3; // number of dependencies per block / graph depth
 
   private final String algorithm;
   private final MessageDigest h;
-  private final int sCost, tCost, pCost;
+  private final int n, r, p;
 
   /**
    * Create a new {@link BalloonHash} instance with the given parameters.
@@ -39,32 +44,30 @@ public class BalloonHash {
    *     "https://docs.oracle.com/javase/9/docs/specs/security/standard-names.html#messagedigest-algorithms">
    *     Java Security Standard Algorithm Names Specification</a> for information about standard
    *     algorithm names.
-   * @param sCost the space cost (in bytes)
-   * @param tCost the time cost (in iterations)
-   * @param pCost the parallelism cost (in threads)
+   * @param n the space cost (in blocks)
+   * @param r the time cost (in rounds)
+   * @param p the parallelism cost (in threads)
    * @throws NoSuchAlgorithmException if no {@code Provider} supports a {@code MessageDigestSpi}
    *     implementation for the specified algorithm
    */
-  public BalloonHash(String algorithm, int sCost, int tCost, int pCost)
-      throws NoSuchAlgorithmException {
-
+  public BalloonHash(String algorithm, int n, int r, int p) throws NoSuchAlgorithmException {
     this.algorithm = algorithm;
     this.h = MessageDigest.getInstance(algorithm);
 
-    if (sCost < h.getDigestLength()) {
-      throw new IllegalArgumentException("sCost must be greater than the digest length");
+    if (n < 1) {
+      throw new IllegalArgumentException("n must be greater than the digest length");
     }
-    this.sCost = sCost;
+    this.n = n % 2 == 0 ? n : n + 1;
 
-    if (tCost < 1) {
-      throw new IllegalArgumentException("tCost must be greater than or equal to 1");
+    if (r < 1) {
+      throw new IllegalArgumentException("r must be greater than or equal to 1");
     }
-    this.tCost = tCost;
+    this.r = r;
 
-    if (pCost < 1) {
-      throw new IllegalArgumentException("pCost must be greater than or equal to 1");
+    if (p < 1) {
+      throw new IllegalArgumentException("p must be greater than or equal to 1");
     }
-    this.pCost = pCost;
+    this.p = p;
   }
 
   /**
@@ -72,17 +75,26 @@ public class BalloonHash {
    *
    * @return the length of the resulting digest (in bytes)
    */
-  public int getDigestLength() {
+  public int digestLength() {
     return h.getDigestLength();
   }
 
   /**
-   * Returns the space cost (in bytes).
+   * Return the number of bytes required to hash a password.
    *
-   * @return the space cost (in bytes)
+   * @return the number of bytes required to hash a password
    */
-  public int getSCost() {
-    return sCost;
+  public int memoryUsage() {
+    return digestLength() * n;
+  }
+
+  /**
+   * Returns the space cost (in hash blocks).
+   *
+   * @return the space cost (in hash blocks)
+   */
+  public int n() {
+    return n;
   }
 
   /**
@@ -90,8 +102,8 @@ public class BalloonHash {
    *
    * @return the time cost (in iterations)
    */
-  public int getTCost() {
-    return tCost;
+  public int r() {
+    return r;
   }
 
   /**
@@ -99,8 +111,8 @@ public class BalloonHash {
    *
    * @return the parallelism cost (in threads)
    */
-  public int getPCost() {
-    return pCost;
+  public int p() {
+    return p;
   }
 
   /**
@@ -115,15 +127,15 @@ public class BalloonHash {
       throw new IllegalArgumentException("salt must be at least 4 bytes long");
     }
 
-    if (pCost == 1) {
+    if (p == 1) {
       return singleHash(h, password, seed(salt, 1));
     }
 
-    return IntStream.rangeClosed(1, pCost)
+    return IntStream.rangeClosed(1, p)
         .parallel()
         .mapToObj(i -> singleHash(newHash(), password, seed(salt, i)))
         .reduce(
-            new byte[getDigestLength()],
+            new byte[digestLength()],
             (a, b) -> {
               // combine all hashes by XORing them together
               final byte[] c = new byte[a.length];
@@ -139,7 +151,7 @@ public class BalloonHash {
     final byte[] cntBlock = new byte[4];
     final byte[] v = new byte[h.getDigestLength()];
     final byte[] idxBlock = new byte[12];
-    final byte[][] buf = new byte[blockCount(sCost, h.getDigestLength())][h.getDigestLength()];
+    final byte[][] buf = new byte[n][h.getDigestLength()];
 
     // Step 1. Expand input into buffer.
     hash(h, cnt++, cntBlock, password, seed, buf[0]);
@@ -148,26 +160,26 @@ public class BalloonHash {
     }
 
     // Step 2. Mix buffer contents.
-    for (int t = 0; t < tCost; t++) {
-      for (int m = 0; m < buf.length; m++) {
+    for (int i = 0; i < r; i++) {
+      for (int j = 0; j < buf.length; j++) {
         // Step 2a. Hash last and current blocks.
-        final byte[] prev = buf[mod(m - 1, buf.length)];
-        hash(h, cnt++, cntBlock, prev, buf[m], buf[m]);
+        final byte[] prev = buf[mod(j - 1, buf.length)];
+        hash(h, cnt++, cntBlock, prev, buf[j], buf[j]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
-        for (int i = 0; i < DELTA; i++) {
-          idxBlock[0] = (byte) (t);
-          idxBlock[1] = (byte) (t >>> 8);
-          idxBlock[2] = (byte) (t >>> 16);
-          idxBlock[3] = (byte) (t >>> 24);
-          idxBlock[4] = (byte) (m);
-          idxBlock[5] = (byte) (m >>> 8);
-          idxBlock[6] = (byte) (m >>> 16);
-          idxBlock[7] = (byte) (m >>> 24);
-          idxBlock[8] = (byte) (i);
-          idxBlock[9] = (byte) (i >>> 8);
-          idxBlock[10] = (byte) (i >>> 16);
-          idxBlock[11] = (byte) (i >>> 24);
+        for (int k = 0; k < DELTA; k++) {
+          idxBlock[0] = (byte) (i);
+          idxBlock[1] = (byte) (i >>> 8);
+          idxBlock[2] = (byte) (i >>> 16);
+          idxBlock[3] = (byte) (i >>> 24);
+          idxBlock[4] = (byte) (j);
+          idxBlock[5] = (byte) (j >>> 8);
+          idxBlock[6] = (byte) (j >>> 16);
+          idxBlock[7] = (byte) (j >>> 24);
+          idxBlock[8] = (byte) (k);
+          idxBlock[9] = (byte) (k >>> 8);
+          idxBlock[10] = (byte) (k >>> 16);
+          idxBlock[11] = (byte) (k >>> 24);
 
           hash(h, cnt++, cntBlock, seed, idxBlock, v);
           int other = (v[0] & 0xff);
@@ -176,7 +188,7 @@ public class BalloonHash {
           other |= (v[3] & 0xff) << 24;
           other = mod(other, buf.length);
 
-          hash(h, cnt++, cntBlock, buf[m], buf[other], buf[m]);
+          hash(h, cnt++, cntBlock, buf[j], buf[other], buf[j]);
         }
       }
     }
@@ -185,34 +197,34 @@ public class BalloonHash {
     return buf[buf.length - 1];
   }
 
-  private byte[] seed(byte[] salt, int i) {
+  private byte[] seed(byte[] salt, int id) {
     final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 12);
 
     // increment first four bytes with worker number
-    int n = (seed[0] & 0xff);
-    n |= (seed[1] & 0xff) << 8;
-    n |= (seed[2] & 0xff) << 16;
-    n |= (seed[3] & 0xff) << 24;
-    n += i;
-    seed[0] = (byte) (n);
-    seed[1] = (byte) (n >>> 8);
-    seed[2] = (byte) (n >>> 16);
-    seed[3] = (byte) (n >>> 24);
+    int i = (seed[0] & 0xff);
+    i |= (seed[1] & 0xff) << 8;
+    i |= (seed[2] & 0xff) << 16;
+    i |= (seed[3] & 0xff) << 24;
+    i += id;
+    seed[0] = (byte) (i);
+    seed[1] = (byte) (i >>> 8);
+    seed[2] = (byte) (i >>> 16);
+    seed[3] = (byte) (i >>> 24);
 
     // add parameters
     int idx = salt.length;
-    seed[idx++] = (byte) (sCost);
-    seed[idx++] = (byte) (sCost >>> 8);
-    seed[idx++] = (byte) (sCost >>> 16);
-    seed[idx++] = (byte) (sCost >>> 24);
-    seed[idx++] = (byte) (tCost);
-    seed[idx++] = (byte) (tCost >>> 8);
-    seed[idx++] = (byte) (tCost >>> 16);
-    seed[idx++] = (byte) (tCost >>> 24);
-    seed[idx++] = (byte) (pCost);
-    seed[idx++] = (byte) (pCost >>> 8);
-    seed[idx++] = (byte) (pCost >>> 16);
-    seed[idx] = (byte) (pCost >>> 24);
+    seed[idx++] = (byte) (n);
+    seed[idx++] = (byte) (n >>> 8);
+    seed[idx++] = (byte) (n >>> 16);
+    seed[idx++] = (byte) (n >>> 24);
+    seed[idx++] = (byte) (r);
+    seed[idx++] = (byte) (r >>> 8);
+    seed[idx++] = (byte) (r >>> 16);
+    seed[idx++] = (byte) (r >>> 24);
+    seed[idx++] = (byte) (p);
+    seed[idx++] = (byte) (p >>> 8);
+    seed[idx++] = (byte) (p >>> 16);
+    seed[idx] = (byte) (p >>> 24);
 
     return seed;
   }
@@ -245,11 +257,5 @@ public class BalloonHash {
 
   private static int mod(int dividend, int divisor) {
     return (int) ((dividend & 0xffffffffL) % (divisor & 0xffffffffL));
-  }
-
-  // returns the number of m-byte blocks required to use n bytes of memory
-  private static int blockCount(int n, int m) {
-    final int rem = n % m;
-    return ((rem == 0) ? n : n + m - rem) / m;
   }
 }

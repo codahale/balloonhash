@@ -30,12 +30,12 @@ class BalloonHashTest {
 
   @Test
   void hashingPasswords() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 11, 1 << 9, 1);
+    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 6, 1 << 9, 1);
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
         .containsExactly(
-            2, 84, 26, -93, -92, -37, -105, -115, 7, 36, 120, 43, -33, -82, -98, -42, 44, 121, -97,
-            25, -70, -70, -70, -15, -25, 61, -78, 28, -46, -54, -72, 67);
+            101, -8, -37, 117, 116, 83, 106, 116, -84, 55, -95, -58, 101, 22, 115, -110, 123, -54,
+            30, -103, -4, 67, 110, -10, -47, -113, -62, -103, 116, 123, -128, 75);
   }
 
   @Test
@@ -44,27 +44,28 @@ class BalloonHashTest {
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
         .containsExactly(
-            27, 68, 89, -102, -82, -19, 29, -72, -123, 1, 92, -21, 7, 92, 29, 69, -27, -78, -71,
-            -56, 26, 116, 5, -120, 2, -81, 49, -38, 58, 7, 117, 6);
+            -26, 60, -115, -30, -21, -40, -68, -54, -102, -27, 36, 36, 3, 4, -51, -98, -55, 24, 38,
+            41, -27, -91, 20, -100, -23, -19, -100, -73, -77, 2, -79, 28);
   }
 
   @Test
   void parallelism() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 11, 1 << 9, 10);
+    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 6, 1 << 9, 10);
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
         .containsExactly(
-            43, 18, 16, -7, 76, -44, 22, 113, 124, 0, -37, -57, -88, 4, -114, -30, -118, 48, -52,
-            67, 8, -127, -29, -120, -16, -3, -77, -87, 111, -23, 39, -40);
+            -15, 57, 43, 109, -61, 52, -32, -90, -61, -42, 18, -15, -102, 108, -103, -93, -106, 46,
+            -46, -1, 15, 72, 112, -14, 57, 40, 70, -49, 55, 126, 24, -116);
   }
 
   @Test
   void parameters() throws NoSuchAlgorithmException {
     final BalloonHash bh = new BalloonHash("SHA-256", 1024, 10, 1);
-    assertThat(bh.getDigestLength()).isEqualTo(32);
-    assertThat(bh.getSCost()).isEqualTo(1024);
-    assertThat(bh.getTCost()).isEqualTo(10);
-    assertThat(bh.getPCost()).isEqualTo(1);
+    assertThat(bh.digestLength()).isEqualTo(32);
+    assertThat(bh.n()).isEqualTo(1024);
+    assertThat(bh.r()).isEqualTo(10);
+    assertThat(bh.p()).isEqualTo(1);
+    assertThat(bh.memoryUsage()).isEqualTo(32768);
   }
 
   @Test
@@ -82,7 +83,7 @@ class BalloonHashTest {
 
   @Test
   void badSpaceCost() {
-    assertThatThrownBy(() -> new BalloonHash("SHA-512", 1, 1, 1))
+    assertThatThrownBy(() -> new BalloonHash("SHA-512", -1, 1, 1))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
