@@ -128,12 +128,12 @@ public class BalloonHash {
     }
 
     if (p == 1) {
-      return singleHash(h, password, seed(salt, 1));
+      return singleHash(h, password, salt, 1);
     }
 
     return IntStream.rangeClosed(1, p)
         .parallel()
-        .mapToObj(i -> singleHash(newHash(), password, seed(salt, i)))
+        .mapToObj(id -> singleHash(newHash(), password, salt, id))
         .reduce(
             new byte[digestLength()],
             (a, b) -> {
@@ -146,7 +146,9 @@ public class BalloonHash {
             });
   }
 
-  private byte[] singleHash(MessageDigest h, byte[] password, byte[] seed) {
+  private byte[] singleHash(MessageDigest h, byte[] password, byte[] salt, int id) {
+    // encode worker ID and params in with the salt
+    final byte[] seed = seed(salt, id);
     int cnt = 0; // the counter used in the security proof
     final byte[] cntBlock = new byte[4];
     final byte[] v = new byte[h.getDigestLength()];
@@ -198,18 +200,7 @@ public class BalloonHash {
   }
 
   private byte[] seed(byte[] salt, int id) {
-    final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 12);
-
-    // increment first four bytes with worker number
-    int i = (seed[0] & 0xff);
-    i |= (seed[1] & 0xff) << 8;
-    i |= (seed[2] & 0xff) << 16;
-    i |= (seed[3] & 0xff) << 24;
-    i += id;
-    seed[0] = (byte) (i);
-    seed[1] = (byte) (i >>> 8);
-    seed[2] = (byte) (i >>> 16);
-    seed[3] = (byte) (i >>> 24);
+    final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 16);
 
     // add parameters
     int idx = salt.length;
@@ -224,8 +215,11 @@ public class BalloonHash {
     seed[idx++] = (byte) (p);
     seed[idx++] = (byte) (p >>> 8);
     seed[idx++] = (byte) (p >>> 16);
-    seed[idx] = (byte) (p >>> 24);
-
+    seed[idx++] = (byte) (p >>> 24);
+    seed[idx++] = (byte) (id);
+    seed[idx++] = (byte) (id >>> 8);
+    seed[idx++] = (byte) (id >>> 16);
+    seed[idx] = (byte) (id >>> 24);
     return seed;
   }
 
