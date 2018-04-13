@@ -25,12 +25,13 @@ import org.junit.jupiter.api.Test;
 
 class BalloonHashTest {
 
+  private static final String SHA_256 = "SHA-256";
   private final byte[] password = "this is a good password".getBytes(StandardCharsets.UTF_8);
   private final byte[] salt = "this is a good salt".getBytes(StandardCharsets.UTF_8);
 
   @Test
   void hashingPasswords() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 6, 1 << 9, 1);
+    final BalloonHash bh = new BalloonHash(SHA_256, 1 << 6, 1 << 9, 1);
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
         .containsExactly(
@@ -40,7 +41,7 @@ class BalloonHashTest {
 
   @Test
   void oddSpaceCost() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 65, 1 << 9, 1);
+    final BalloonHash bh = new BalloonHash(SHA_256, 65, 1 << 9, 1);
     assertThat(bh.n()).isEqualTo(66);
 
     final byte[] actual = bh.hash(password, salt);
@@ -52,7 +53,7 @@ class BalloonHashTest {
 
   @Test
   void parallelism() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 1 << 6, 1 << 9, 10);
+    final BalloonHash bh = new BalloonHash(SHA_256, 1 << 6, 1 << 9, 10);
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
         .containsExactly(
@@ -62,7 +63,7 @@ class BalloonHashTest {
 
   @Test
   void parameters() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 1024, 10, 1);
+    final BalloonHash bh = new BalloonHash(SHA_256, 1024, 10, 1);
     assertThat(bh.digestLength()).isEqualTo(32);
     assertThat(bh.n()).isEqualTo(1024);
     assertThat(bh.r()).isEqualTo(10);
@@ -72,7 +73,7 @@ class BalloonHashTest {
 
   @Test
   void shortSalt() throws NoSuchAlgorithmException {
-    final BalloonHash bh = new BalloonHash("SHA-256", 1024, 1, 1);
+    final BalloonHash bh = new BalloonHash(SHA_256, 1024, 1, 1);
     assertThatThrownBy(() -> bh.hash(new byte[12], new byte[3]))
         .isInstanceOf(IllegalArgumentException.class);
   }
@@ -85,19 +86,19 @@ class BalloonHashTest {
 
   @Test
   void badSpaceCost() {
-    assertThatThrownBy(() -> new BalloonHash("SHA-512", -1, 1, 1))
+    assertThatThrownBy(() -> new BalloonHash(SHA_256, -1, 1, 1))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void badTimeCost() {
-    assertThatThrownBy(() -> new BalloonHash("SHA-512", 1024, 0, 1))
+    assertThatThrownBy(() -> new BalloonHash(SHA_256, 1024, 0, 1))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void badParallelismCost() {
-    assertThatThrownBy(() -> new BalloonHash("SHA-512", 1024, 1, 0))
+    assertThatThrownBy(() -> new BalloonHash(SHA_256, 1024, 1, 0))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }
