@@ -36,3 +36,8 @@ Benchmarks.hash  128    4    1  avgt  200    1690.955 ±   19.249  us/op
 Benchmarks.hash  128    4   10  avgt  200   15446.866 ±  155.790  us/op
 Benchmarks.hash  128    4  100  avgt  200  150359.627 ± 2680.702  us/op
 ```
+
+## Should I Use It?
+
+Absolutely not. I like the overall algorithm, but there is no standard Balloon Hashing algorithm nor
+is there a proposal for such.
