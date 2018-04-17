@@ -45,6 +45,7 @@ public class BalloonHash {
    */
   public BalloonHash(MessageDigest h, int n, int r, int p) {
     this.h = h;
+    h.reset();
 
     if (n < 1) {
       throw new IllegalArgumentException("n must be greater than the digest length");
