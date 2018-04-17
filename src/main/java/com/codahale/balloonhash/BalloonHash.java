@@ -49,7 +49,7 @@ public class BalloonHash {
     if (n < 1) {
       throw new IllegalArgumentException("n must be greater than the digest length");
     }
-    this.n = n % 2 == 0 ? n : n + 1;
+    this.n = n + (n % 2);
 
     if (r < 1) {
       throw new IllegalArgumentException("r must be greater than or equal to 1");
