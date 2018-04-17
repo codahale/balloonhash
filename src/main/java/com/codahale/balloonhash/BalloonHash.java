@@ -236,8 +236,6 @@ public class BalloonHash {
       h.digest(out, 0, out.length);
     } catch (DigestException e) {
       throw new RuntimeException(e);
-    } finally {
-      h.reset();
     }
   }
 
