@@ -17,6 +17,7 @@ package com.codahale.balloonhash.benchmarks;
 
 import com.codahale.balloonhash.BalloonHash;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.Main;
@@ -55,7 +56,7 @@ public class Benchmarks {
 
   @Setup
   public void setup() throws NoSuchAlgorithmException {
-    this.bh = new BalloonHash("SHA-512", n, r, p);
+    this.bh = new BalloonHash(MessageDigest.getInstance("SHA-512"), n, r, p);
   }
 
   @Benchmark

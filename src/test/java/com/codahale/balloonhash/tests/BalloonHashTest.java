@@ -20,17 +20,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.codahale.balloonhash.BalloonHash;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.junit.jupiter.api.Test;
 
 class BalloonHashTest {
 
-  private static final String SHA_256 = "SHA-256";
+  private final MessageDigest SHA_256;
   private final byte[] password = "this is a good password".getBytes(StandardCharsets.UTF_8);
   private final byte[] salt = "this is a good salt".getBytes(StandardCharsets.UTF_8);
 
+  BalloonHashTest() throws NoSuchAlgorithmException {
+    this.SHA_256 = MessageDigest.getInstance("SHA-256");
+  }
+
   @Test
-  void hashingPasswords() throws NoSuchAlgorithmException {
+  void hashingPasswords() {
     final BalloonHash bh = new BalloonHash(SHA_256, 1 << 6, 1 << 9, 1);
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
@@ -40,7 +45,7 @@ class BalloonHashTest {
   }
 
   @Test
-  void oddSpaceCost() throws NoSuchAlgorithmException {
+  void oddSpaceCost() {
     final BalloonHash bh = new BalloonHash(SHA_256, 65, 1 << 9, 1);
     assertThat(bh.n()).isEqualTo(66);
 
@@ -52,7 +57,7 @@ class BalloonHashTest {
   }
 
   @Test
-  void parallelism() throws NoSuchAlgorithmException {
+  void parallelism() {
     final BalloonHash bh = new BalloonHash(SHA_256, 1 << 6, 1 << 9, 10);
     final byte[] actual = bh.hash(password, salt);
     assertThat(actual)
@@ -62,7 +67,7 @@ class BalloonHashTest {
   }
 
   @Test
-  void parameters() throws NoSuchAlgorithmException {
+  void parameters() {
     final BalloonHash bh = new BalloonHash(SHA_256, 1024, 10, 1);
     assertThat(bh.digestLength()).isEqualTo(32);
     assertThat(bh.n()).isEqualTo(1024);
@@ -72,16 +77,10 @@ class BalloonHashTest {
   }
 
   @Test
-  void shortSalt() throws NoSuchAlgorithmException {
+  void shortSalt() {
     final BalloonHash bh = new BalloonHash(SHA_256, 1024, 1, 1);
     assertThatThrownBy(() -> bh.hash(new byte[12], new byte[3]))
         .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void badAlgorithm() {
-    assertThatThrownBy(() -> new BalloonHash("YES", 1024, 1, 1))
-        .isInstanceOf(NoSuchAlgorithmException.class);
   }
 
   @Test

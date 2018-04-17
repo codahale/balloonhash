@@ -32,27 +32,19 @@ public class BalloonHash {
   private static final byte[] NULL = new byte[0];
   private static final int DELTA = 3; // number of dependencies per block / graph depth
 
-  private final String algorithm;
   private final MessageDigest h;
   private final int n, r, p;
 
   /**
    * Create a new {@link BalloonHash} instance with the given parameters.
    *
-   * @param algorithm the name of the algorithm requested. See the MessageDigest section in the <a
-   *     href=
-   *     "https://docs.oracle.com/javase/9/docs/specs/security/standard-names.html#messagedigest-algorithms">
-   *     Java Security Standard Algorithm Names Specification</a> for information about standard
-   *     algorithm names.
+   * @param h the hash algorithm to use
    * @param n the space cost (in blocks)
    * @param r the time cost (in rounds)
    * @param p the parallelism cost (in threads)
-   * @throws NoSuchAlgorithmException if no {@code Provider} supports a {@code MessageDigestSpi}
-   *     implementation for the specified algorithm
    */
-  public BalloonHash(String algorithm, int n, int r, int p) throws NoSuchAlgorithmException {
-    this.algorithm = algorithm;
-    this.h = MessageDigest.getInstance(algorithm);
+  public BalloonHash(MessageDigest h, int n, int r, int p) {
+    this.h = h;
 
     if (n < 1) {
       throw new IllegalArgumentException("n must be greater than the digest length");
@@ -241,7 +233,7 @@ public class BalloonHash {
 
   private MessageDigest newHash() {
     try {
-      return MessageDigest.getInstance(algorithm);
+      return MessageDigest.getInstance(h.getAlgorithm(), h.getProvider());
     } catch (NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
     }
