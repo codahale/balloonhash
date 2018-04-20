@@ -129,7 +129,7 @@ public class BalloonHash {
         .parallel()
         .mapToObj(id -> singleHash(newHash(), password, salt, id))
         .reduce(
-            new byte[digestLength()],
+            new byte[l],
             (a, b) -> {
               // combine all hashes by XORing them together
               final byte[] c = new byte[a.length];
