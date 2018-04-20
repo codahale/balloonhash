@@ -33,7 +33,7 @@ public class BalloonHash {
   private static final int DELTA = 3; // number of dependencies per block / graph depth
 
   private final MessageDigest h;
-  private final int n, r, p;
+  private final int n, r, p, l;
 
   /**
    * Create a new {@link BalloonHash} instance with the given parameters.
@@ -46,6 +46,7 @@ public class BalloonHash {
   public BalloonHash(MessageDigest h, int n, int r, int p) {
     this.h = h;
     h.reset();
+    this.l = h.getDigestLength();
 
     if (n < 1) {
       throw new IllegalArgumentException("n must be greater than the digest length");
@@ -69,7 +70,7 @@ public class BalloonHash {
    * @return the length of the resulting digest (in bytes)
    */
   public int digestLength() {
-    return h.getDigestLength();
+    return l;
   }
 
   /**
@@ -78,7 +79,7 @@ public class BalloonHash {
    * @return the number of bytes required to hash a password
    */
   public int memoryUsage() {
-    return digestLength() * n;
+    return l * n;
   }
 
   /**
@@ -144,9 +145,9 @@ public class BalloonHash {
     final byte[] seed = seed(salt, id);
     int cnt = 0; // the counter used in the security proof
     final byte[] cntBlock = new byte[4];
-    final byte[] v = new byte[h.getDigestLength()];
+    final byte[] v = new byte[l];
     final byte[] idxBlock = new byte[12];
-    final byte[][] buf = new byte[n][h.getDigestLength()];
+    final byte[][] buf = new byte[n][l];
 
     // Step 1. Expand input into buffer.
     hash(h, cnt++, cntBlock, password, seed, buf[0]);
