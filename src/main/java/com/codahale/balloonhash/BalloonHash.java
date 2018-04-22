@@ -159,7 +159,7 @@ public class BalloonHash {
     for (int t = 0; t < r; t++) {
       for (int m = 0; m < buf.length; m++) {
         // Step 2a. Hash last and current blocks.
-        final byte[] prev = buf[mod(m - 1, buf.length)];
+        final byte[] prev = buf[(int) ((m - 1 & 0xffffffffL) % (buf.length & 0xffffffffL))];
         hash(h, cnt++, cntBlock, prev, buf[m], buf[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
@@ -182,7 +182,7 @@ public class BalloonHash {
           other |= (v[1] & 0xff) << 8;
           other |= (v[2] & 0xff) << 16;
           other |= (v[3] & 0xff) << 24;
-          other = mod(other, buf.length);
+          other = (int) ((other & 0xffffffffL) % (buf.length & 0xffffffffL));
 
           hash(h, cnt++, cntBlock, buf[m], buf[other], buf[m]);
         }
@@ -239,9 +239,5 @@ public class BalloonHash {
     } catch (NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private static int mod(int dividend, int divisor) {
-    return (int) ((dividend & 0xffffffffL) % (divisor & 0xffffffffL));
   }
 }
