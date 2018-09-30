@@ -16,11 +16,9 @@
 package com.codahale.balloonhash.benchmarks;
 
 import com.codahale.balloonhash.BalloonHash;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
-import org.openjdk.jmh.Main;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -29,20 +27,14 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.runner.RunnerException;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Benchmark)
 public class Benchmarks {
-  public static void main(String[] args) throws IOException, RunnerException {
-    Main.main(args);
-  }
-
   private final byte[] password = new byte[30];
   private final byte[] salt = new byte[32];
 
-  @SuppressWarnings("NullAway.Init")
   private BalloonHash bh;
 
   @Param({"32", "64", "128"})
