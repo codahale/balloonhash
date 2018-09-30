@@ -132,8 +132,8 @@ public class BalloonHash {
             new byte[l],
             (a, b) -> {
               // combine all hashes by XORing them together
-              final byte[] c = new byte[a.length];
-              for (int i = 0; i < a.length; i++) {
+              var c = new byte[a.length];
+              for (var i = 0; i < a.length; i++) {
                 c[i] = (byte) (a[i] ^ b[i]);
               }
               return c;
@@ -142,28 +142,28 @@ public class BalloonHash {
 
   private byte[] singleHash(MessageDigest h, byte[] password, byte[] salt, int id) {
     // encode worker ID and params in with the salt
-    final byte[] seed = seed(salt, id);
-    int cnt = 0; // the counter used in the security proof
-    final byte[] cntBlock = new byte[4];
-    final byte[] v = new byte[l];
-    final byte[] idxBlock = new byte[12];
-    final byte[][] buf = new byte[n][l];
+    var seed = seed(salt, id);
+    var cnt = 0; // the counter used in the security proof
+    var cntBlock = new byte[4];
+    var v = new byte[l];
+    var idxBlock = new byte[12];
+    var buf = new byte[n][l];
 
     // Step 1. Expand input into buffer.
     hash(h, cnt++, cntBlock, password, seed, buf[0]);
-    for (int m = 1; m < buf.length; m++) {
+    for (var m = 1; m < buf.length; m++) {
       hash(h, cnt++, cntBlock, buf[m - 1], NULL, buf[m]);
     }
 
     // Step 2. Mix buffer contents.
-    for (int t = 0; t < r; t++) {
-      for (int m = 0; m < buf.length; m++) {
+    for (var t = 0; t < r; t++) {
+      for (var m = 0; m < buf.length; m++) {
         // Step 2a. Hash last and current blocks.
-        final byte[] prev = buf[(int) ((m - 1 & 0xffffffffL) % (buf.length & 0xffffffffL))];
+        var prev = buf[(int) ((m - 1 & 0xffffffffL) % (buf.length & 0xffffffffL))];
         hash(h, cnt++, cntBlock, prev, buf[m], buf[m]);
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
-        for (int i = 0; i < DELTA; i++) {
+        for (var i = 0; i < DELTA; i++) {
           idxBlock[0] = (byte) (t);
           idxBlock[1] = (byte) (t >>> 8);
           idxBlock[2] = (byte) (t >>> 16);
@@ -178,7 +178,7 @@ public class BalloonHash {
           idxBlock[11] = (byte) (i >>> 24);
 
           hash(h, cnt++, cntBlock, seed, idxBlock, v);
-          int other = (v[0] & 0xff);
+          var other = (v[0] & 0xff);
           other |= (v[1] & 0xff) << 8;
           other |= (v[2] & 0xff) << 16;
           other |= (v[3] & 0xff) << 24;
@@ -194,10 +194,10 @@ public class BalloonHash {
   }
 
   private byte[] seed(byte[] salt, int id) {
-    final byte[] seed = Arrays.copyOfRange(salt, 0, salt.length + 16);
+    var seed = Arrays.copyOfRange(salt, 0, salt.length + 16);
 
     // add parameters
-    int idx = salt.length;
+    var idx = salt.length;
     seed[idx++] = (byte) (n);
     seed[idx++] = (byte) (n >>> 8);
     seed[idx++] = (byte) (n >>> 16);

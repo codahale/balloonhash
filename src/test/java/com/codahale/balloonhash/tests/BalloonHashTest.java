@@ -36,9 +36,8 @@ class BalloonHashTest {
 
   @Test
   void hashingPasswords() {
-    final BalloonHash bh = new BalloonHash(h, 1 << 6, 1 << 9, 1);
-    final byte[] actual = bh.hash(password, salt);
-    assertThat(actual)
+    var bh = new BalloonHash(h, 1 << 6, 1 << 9, 1);
+    assertThat(bh.hash(password, salt))
         .containsExactly(
             90, -33, -15, -5, 72, 110, -60, 30, 66, -122, -60, -64, 68, -19, 48, 74, 51, -112, -120,
             -42, 55, -51, 89, 120, 24, -41, 93, -24, 0, -1, -53, -23);
@@ -47,9 +46,8 @@ class BalloonHashTest {
   @Test
   void dirtyMessageDigest() {
     h.update((byte) 1);
-    final BalloonHash bh = new BalloonHash(h, 1 << 6, 1 << 9, 1);
-    final byte[] actual = bh.hash(password, salt);
-    assertThat(actual)
+    var bh = new BalloonHash(h, 1 << 6, 1 << 9, 1);
+    assertThat(bh.hash(password, salt))
         .containsExactly(
             90, -33, -15, -5, 72, 110, -60, 30, 66, -122, -60, -64, 68, -19, 48, 74, 51, -112, -120,
             -42, 55, -51, 89, 120, 24, -41, 93, -24, 0, -1, -53, -23);
@@ -57,11 +55,9 @@ class BalloonHashTest {
 
   @Test
   void oddSpaceCost() {
-    final BalloonHash bh = new BalloonHash(h, 65, 1 << 9, 1);
+    var bh = new BalloonHash(h, 65, 1 << 9, 1);
     assertThat(bh.n()).isEqualTo(66);
-
-    final byte[] actual = bh.hash(password, salt);
-    assertThat(actual)
+    assertThat(bh.hash(password, salt))
         .containsExactly(
             118, 73, 93, -21, -65, -87, 112, -9, 12, 111, -106, -23, 22, -30, -52, -2, 27, -82, -91,
             63, -98, -115, 9, 0, -39, 49, -51, -49, 26, -110, -9, 35);
@@ -69,9 +65,8 @@ class BalloonHashTest {
 
   @Test
   void parallelism() {
-    final BalloonHash bh = new BalloonHash(h, 1 << 6, 1 << 9, 10);
-    final byte[] actual = bh.hash(password, salt);
-    assertThat(actual)
+    var bh = new BalloonHash(h, 1 << 6, 1 << 9, 10);
+    assertThat(bh.hash(password, salt))
         .containsExactly(
             -33, -107, 53, 8, -5, 42, -121, -56, 40, -63, 103, -77, -1, 5, 82, -100, -47, -122, 56,
             -85, 72, -35, 59, 112, 12, -26, -12, -121, -112, 118, -67, 106);
@@ -79,7 +74,7 @@ class BalloonHashTest {
 
   @Test
   void parameters() {
-    final BalloonHash bh = new BalloonHash(h, 1024, 10, 1);
+    var bh = new BalloonHash(h, 1024, 10, 1);
     assertThat(bh.digestLength()).isEqualTo(32);
     assertThat(bh.n()).isEqualTo(1024);
     assertThat(bh.r()).isEqualTo(10);
@@ -89,7 +84,7 @@ class BalloonHashTest {
 
   @Test
   void shortSalt() {
-    final BalloonHash bh = new BalloonHash(h, 1024, 1, 1);
+    var bh = new BalloonHash(h, 1024, 1, 1);
     assertThatThrownBy(() -> bh.hash(new byte[12], new byte[3]))
         .isInstanceOf(IllegalArgumentException.class);
   }
