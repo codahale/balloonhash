@@ -164,15 +164,15 @@ public class BalloonHash {
 
         // Step 2b. Hash in pseudorandomly chosen blocks.
         for (var i = 0; i < DELTA; i++) {
-          idxBlock[0] = (byte) (t);
+          idxBlock[0] = (byte) t;
           idxBlock[1] = (byte) (t >>> 8);
           idxBlock[2] = (byte) (t >>> 16);
           idxBlock[3] = (byte) (t >>> 24);
-          idxBlock[4] = (byte) (m);
+          idxBlock[4] = (byte) m;
           idxBlock[5] = (byte) (m >>> 8);
           idxBlock[6] = (byte) (m >>> 16);
           idxBlock[7] = (byte) (m >>> 24);
-          idxBlock[8] = (byte) (i);
+          idxBlock[8] = (byte) i;
           idxBlock[9] = (byte) (i >>> 8);
           idxBlock[10] = (byte) (i >>> 16);
           idxBlock[11] = (byte) (i >>> 24);
@@ -198,19 +198,19 @@ public class BalloonHash {
 
     // add parameters
     var idx = salt.length;
-    seed[idx++] = (byte) (n);
+    seed[idx++] = (byte) n;
     seed[idx++] = (byte) (n >>> 8);
     seed[idx++] = (byte) (n >>> 16);
     seed[idx++] = (byte) (n >>> 24);
-    seed[idx++] = (byte) (r);
+    seed[idx++] = (byte) r;
     seed[idx++] = (byte) (r >>> 8);
     seed[idx++] = (byte) (r >>> 16);
     seed[idx++] = (byte) (r >>> 24);
-    seed[idx++] = (byte) (p);
+    seed[idx++] = (byte) p;
     seed[idx++] = (byte) (p >>> 8);
     seed[idx++] = (byte) (p >>> 16);
     seed[idx++] = (byte) (p >>> 24);
-    seed[idx++] = (byte) (id);
+    seed[idx++] = (byte) id;
     seed[idx++] = (byte) (id >>> 8);
     seed[idx++] = (byte) (id >>> 16);
     seed[idx] = (byte) (id >>> 24);
@@ -218,7 +218,7 @@ public class BalloonHash {
   }
 
   private void hash(MessageDigest h, int cnt, byte[] cntBlock, byte[] a, byte[] b, byte[] out) {
-    cntBlock[0] = (byte) (cnt);
+    cntBlock[0] = (byte) cnt;
     cntBlock[1] = (byte) (cnt >>> 8);
     cntBlock[2] = (byte) (cnt >>> 16);
     cntBlock[3] = (byte) (cnt >>> 24);
